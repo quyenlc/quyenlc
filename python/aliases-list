@@ -1,0 +1,65 @@
+#!/usr/bin/python
+import os
+import sys
+import subprocess
+import logging
+import argparse
+import httplib2
+import re
+from apiclient.discovery import build
+from apiclient import discovery
+from oauth2client import client
+from oauth2client import tools
+from oauth2client.file import Storage
+import logging
+from Infra import Gauth
+
+try:
+    import argparse
+    parser = argparse.ArgumentParser(prog='aliases-list', description='List all aliases of users and groups', parents=[tools.argparser])
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    flags = parser.parse_args()
+except ImportError:
+    flags = None
+
+
+
+
+SCOPES = [
+    'https://www.googleapis.com/auth/admin.directory.user', 
+    'https://www.googleapis.com/auth/admin.directory.user.alias', 
+    'https://www.googleapis.com/auth/admin.directory.group.readonly',
+    ]
+CLIENT_SECRET_FILE = 'client_id.json'
+APPLICATION_NAME = 'Infra_QuyenLe'
+
+credentials = Gauth(SCOPES, flags)
+http = credentials.authorize(httplib2.Http())
+service = discovery.build('admin', 'directory_v1', http=http)
+all_aliases = set()
+results = service.users().list(domain='punch.vn', orderBy='email', maxResults=200).execute()
+users = results.get('users', [])
+
+# Aliases of users
+for user in users:
+    results1 = service.users().aliases().list(userKey=user['id']).execute()
+    aliases = results1.get('aliases', [])
+    for alias in aliases:
+        print(alias)
+        regex = re.compile("@g.punch.vn")
+        check = regex.search(alias['alias'])
+        if check != None :
+            all_aliases.add(alias['alias'])
+
+# Aliases of groups
+results = service.groups().list(domain='punch.vn').execute()
+groups = results.get('groups', [])
+for group in groups:
+    results1 = service.groups().aliases().list(groupKey=group['id']).execute()
+    aliases = results1.get('aliases', [])
+    for alias in aliases:
+        all_aliases.add(alias['alias'])
+
+print("All aliases: ")
+for alias in all_aliases:
+    print(alias)
