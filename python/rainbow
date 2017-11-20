@@ -1,0 +1,172 @@
+#!/usr/bin/python
+
+import argparse
+import sys
+import boto3
+import botocore
+import os 
+import logging
+import re
+import subprocess
+
+#******************************************************************************
+#  REQUIREMENTS
+#******************************************************************************
+# - module boto3 for python
+# - rclone installed and configured. Test destination with `rclone ls` command
+# - awscli tools. Test source with `aws s3 ls` command
+#******************************************************************************
+
+
+
+parser = argparse.ArgumentParser(prog='rainbow', description='Copy data from/to cloud services')
+parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+parser.add_argument('--src', nargs=1, help='Local directory from which data is copied. Default: current dir', required=True)
+parser.add_argument('--dest', nargs=1, help='Local directory to which data is copied.', required=True)
+parser.add_argument('-e', '--exclude-file', nargs=1, help='File contains folder/file should be excluded from copying.')
+parser.add_argument('--dry-run', action='store_true', help='Dry run')
+parser.add_argument('-l', '--log', nargs=1, help="logfile. Default: %(prog)s.log", default=[parser.prog + ".log"])
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+args = vars(parser.parse_args(sys.argv[1:]))
+
+if args['debug'] == True:
+    logging.basicConfig(level=logging.DEBUG, format = ' %(asctime)s [%(levelname)s] : %(message)s', filename=args['log'][0])
+else :
+    logging.basicConfig(level=logging.INFO, format = ' %(asctime)s [%(levelname)s] : %(message)s', filename=args['log'][0])
+logging.getLogger().addHandler(logging.StreamHandler())
+logging.debug("ARGS: " + str(args))
+
+BASEDIR = args['src'][0]
+BUCKET_NAME = args['src'][0].split("/")[2]
+KEY_PREFIX = "/".join(args['src'][0].split("/")[3:])
+logging.info("BUCKET_NAME: " + BUCKET_NAME)
+logging.info("KEY_PREFIX: " + KEY_PREFIX)
+
+s3 = boto3.resource('s3')
+
+def send(f):
+    logging.debug("Send file " + f)
+
+    try:
+        subprocess.check_call(['rclone', 'copy', f, args['dest'][0]])
+        logging.info("Rclone copy to google drive : " + f)
+        subprocess.check_call(['rm', '-f', f])
+    except subprocess.CalledProcessError:
+        logging.error("Could not copy file " + d + " to destination " + args['dest'][0])
+    
+
+
+def move(f, prefix = KEY_PREFIX):
+    logging.debug("Moving file " + f)
+    if args['dry_run'] == True:
+        logging.info("Dry run mode is enabled. Stop moving file " + f)
+        return None
+    try:
+        s3.Bucket(BUCKET_NAME).download_file(prefix + f, '/tmp/' + f)
+    except botocore.exceptions.ClientError as e:
+        logging.error("Could not download file "+ prefix + f)
+    send(f)
+
+
+def zmove(d, prefix = KEY_PREFIX):
+    logging.debug("Compress then send folder " + d)
+    if args['dry_run'] == True:
+        logging.info("Dry run mode is enabled. Stop moving folder " + d)
+        return None
+    source_location = "s3://" + BUCKET_NAME + "/" + prefix + d
+    logging.info("Source location: " + source_location)
+    try:
+        subprocess.check_call(['aws', 's3', 'cp', source_location, d + "/", '--recursive'])
+    except subprocess.CalledProcessError:
+        logging.error("Could not download directory " + d)
+    try:
+        logging.info("Compressing folder " + d)
+        subprocess.check_call(['tar', '-zcf',d[:-1] + ".tar.gz", d])
+    except subprocess.CalledProcessError:
+        logging.error("Could not compress directory " + d)
+    try:
+        subprocess.check_call(['rm', '-rf', d])
+    except subprocess.CalledProcessError:
+        logging.error("Could not remove directory " + d)
+    send(d[:-1] + ".tar.gz")
+
+
+    
+
+
+def listdir():
+    logging.debug("BUCKET_NAME: " + BUCKET_NAME)
+    folders = []
+    files = []
+    try:
+        p = subprocess.Popen(['aws', 's3', 'ls', BASEDIR], stdout=subprocess.PIPE)
+        stdout_value = p.communicate()[0]
+        logging.debug("Result" + stdout_value.decode('ascii'))
+        for line in stdout_value.decode('ascii').split("\n"):
+            logging.debug("stdout line: " + line.strip())
+            regex = re.compile(r"^PRE\s")
+            if line.strip() != "":
+                if regex.search(line.strip()) == None:
+                    files.append(line.strip().split()[3])
+                else: 
+                    folders.append(line.strip().split()[1])
+    except ValueError as e:
+        logging.error("Checking status of autoscaler after restart was fail")
+        return 0
+
+    result = {'files': files, 'folders':folders}
+    return result
+
+def test():
+    logging.info(args)
+    exclusion = getExclusion()
+    logging.info("Excluded files: " + str(exclusion))
+
+def getExclusion():
+    exclusion = []
+    if args['exclude_file'] != None:
+        try:
+            p = subprocess.Popen(['cat', args['exclude_file'][0]], stdout=subprocess.PIPE)
+            stdout_value = p.communicate()[0]
+            logging.debug("Result" + stdout_value.decode('ascii'))
+            for line in stdout_value.split("\n"):
+                if line.strip() != '':
+                    exclusion.append(line.strip())
+
+        except Exception as e:
+            logging.error("Could not read exclusion file")
+    return exclusion
+
+
+#******************************************************************************
+#                                     MAIN
+#******************************************************************************
+dir_content = listdir()
+logging.debug("Dir content:" + str(dir_content))
+exclusion = getExclusion()
+logging.debug("Excluded files: " + str(exclusion))
+
+for file in dir_content['files']:
+    if file in exclusion :
+        continue
+    move(file)
+for folder in dir_content['folders']:
+    if folder in exclusion :
+        continue
+    zmove(folder)
+
+#******************************************************************************
+#                                   END MAIN
+#******************************************************************************
+
+
+
+#******************************************************************************
+#  TROUBLE SHOTTING
+#******************************************************************************
+# Error when import boto3 
+#   sudo pip install boto --upgrade
+#   sudo pip install boto3 --upgrade
+# Error when work with botocore/ `aws s3 ls`
+#   sudo pip install awscli --upgrade
+#******************************************************************************

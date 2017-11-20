@@ -1,0 +1,14 @@
+{
+  "name": "ams",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "runtest"
+  },
+  "author": "quyen.le",
+  "license": "ISC",
+  "dependencies": {
+    "angular": "^1.6.6"
+  }
+}

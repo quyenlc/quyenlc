@@ -1,0 +1,45 @@
+#! /bin/bash
+dry_run=false
+param_string=`getopt -o d --long text-file:,key-file:,dry-run -n 'sedX' -- "$@"`
+eval set -- "$param_string"
+has_text=false
+has_key=false
+while [[ true ]]; do
+    #statements
+    case "$1" in
+        --text-file)
+            case "$2" in
+                "") shift 2 ;;
+                *) text_file=$2 ; has_text=true ; shift 2 ;;
+            esac ;;
+        --key-file)
+            case "$2" in
+                "") shift 2 ;;
+                *) key_file=$2 ; has_key=true ; shift 2 ;;
+            esac ;;
+        -d|--dry-run) dry_run=true ; shift ;;
+        --) shift ; break ;;
+        *) echo "Unknown option: ${1}" ; exit 1 ;;
+    esac
+done
+
+if ! $has_text; then
+    echo "option --text-file is required";
+    exit 1;
+fi
+if ! $has_key ; then
+    echo "option --key-file is required";
+    exit 1;
+fi
+
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    orig_info=($line)
+    old_key=${orig_info[0]}
+    new_key=${orig_info[1]}
+    echo "Changing old key: ${old_key} to new key: ${new_key} ..."
+    if $dry_run ; then
+        sed "s/${old_key}/${new_key}/g" $text_file
+    else
+        sed -i -e "s/${old_key}/${new_key}/g" $text_file
+    fi
+done < "$key_file"

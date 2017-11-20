@@ -1,0 +1,90 @@
+#!/usr/bin/python
+from selenium import webdriver
+from datetime import date
+import os
+import sys
+import argparse
+
+parser = argparse.ArgumentParser(prog='monthend', description='End of month is coming')
+parser.add_argument('--dry-run', action='store_true', help='Dry run mode')
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+
+parser.add_argument('--user', nargs=1, help='User name (*)')
+parser.add_argument('--passwd', nargs=1, help='Password (*)')
+parser.add_argument('--url', nargs=1, help='Egroupware url. Default: http://172.21.149.150/egroupware/', default=['http://172.21.149.150/egroupware/'])
+args = vars(parser.parse_args(sys.argv[1:]))
+
+if 'USER' in os.environ:
+    USERNAME = os.environ["USER"]
+if 'PASSWD' in os.environ:
+    PASSWD = os.environ["PASSWD"]
+
+if args['user'] != None:
+    USERNAME    = args['user'][0]
+if args['passwd'] != None:
+    PASSWD      = args['passwd'][0]
+
+if not 'USERNAME' in locals() or not 'PASSWD' in locals():
+    print("Username or password was not defined")
+    exit()
+
+
+EGROUPWARE_URL = 'http://172.21.149.150/egroupware/'
+if args['url'] != None:
+    EGROUPWARE_URL = args['url'][0]
+
+browser = webdriver.Firefox()
+browser.get(EGROUPWARE_URL)
+
+def click_id(button_id):
+    button = browser.find_element_by_id(button_id)
+    button.click()
+
+def click_name(button_name):
+    button = browser.find_element_by_name(button_name)
+    button.click()
+
+def fill_id(text_box_id, value):
+    text_box = browser.find_element_by_id(text_box_id)
+    text_box.clear()
+    text_box.send_keys(value)
+
+def fill_name(text_box_name, value):
+    text_box = browser.find_element_by_name(text_box_name)
+    text_box.send_keys(value)
+
+def select_id(dropbox_id, value):
+    act_choose_project = browser.find_element_by_id(dropbox_id)
+    for option in act_choose_project.find_elements_by_tag_name('option'):
+        opt_value = option.get_attribute("value")
+        if opt_value == value:
+                option.click()
+                break
+#Login
+fill_name('login', USERNAME)
+fill_name('passwd', PASSWD)
+click_name('submitit')
+
+#Check in
+browser.get(EGROUPWARE_URL + 'index.php?menuaction=timesheet.timesheet_ui.edit')
+
+select_id('exec[pm_id]', '134') # Infrastructure management
+today = str(date.today().year) + "/" + str(date.today().month) + "/" + str(date.today().day) 
+fill_id('exec[ts_start][str]', today)
+select_id('exec[start_time][H]', '8')
+select_id('exec[start_time][i]', '30')
+fill_id('exec[ts_duration][value]', '8')
+fill_id('exec[ts_quantity]', '1')
+select_id('exec[end_time][H]', '0')
+select_id('exec[end_time][i]', '0')
+
+if args['dry_run']:
+    print("Dry run mode is enabled. Stop")
+else:
+    click_name('exec[button][save]')
+    browser.close()
+
+
+
+
+# End

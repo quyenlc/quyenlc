@@ -1,0 +1,26 @@
+#!/usr/bin/python
+import argparse
+import os
+from slackclient import SlackClient
+
+
+parser = argparse.ArgumentParser(prog='test-slack', description='Test sending slack messages')
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+parser.add_argument('--text', nargs=1, help='Text to send', required=True)
+parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+all_args = vars(parser.parse_args())
+
+
+"""Document: http://slackapi.github.io/python-slackclient/auth.html"""
+# To get Token: https://slack.com/oauth/authorize?scope=chat:write:user&client_id=3917381891.273659787031
+slack_token = os.environ["SLACK_API_TOKEN"]
+sc = SlackClient(slack_token)
+
+if not all_args['debug']:
+    print("Sending ...")
+    result =sc.api_call(
+          "chat.postMessage",
+          channel="#infra-infosec",
+          text=all_args['text']
+    )
+    print(result)

@@ -1,0 +1,5 @@
+N = int(raw_input())
+data = raw_input()
+ldata = data.split()
+T = tuple(ldata)
+print hash(T)

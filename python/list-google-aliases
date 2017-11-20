@@ -1,0 +1,102 @@
+#!/usr/bin/python
+import os
+import sys
+import subprocess
+import logging
+import argparse
+import httplib2
+import re
+from apiclient.discovery import build
+from apiclient import discovery
+from oauth2client import client
+from oauth2client import tools
+from oauth2client.file import Storage
+import logging
+
+try:
+    import argparse
+    parser = argparse.ArgumentParser(prog='list-google-aliases', description='List all aliases of users and groups', parents=[tools.argparser])
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    flags = parser.parse_args()
+except ImportError:
+    flags = None
+
+
+
+
+SCOPES = [
+    'https://www.googleapis.com/auth/admin.directory.user', 
+    'https://www.googleapis.com/auth/admin.directory.user.alias', 
+    'https://www.googleapis.com/auth/admin.directory.group.readonly',
+    ]
+CLIENT_SECRET_FILE = 'client_id.json'
+APPLICATION_NAME = 'Infra_QuyenLe'
+
+def get_credentials(scope = SCOPES):
+    """Get credentials for app.
+
+    If nothing has been stored, or if the stored credentials are invalid,
+    the OAuth2 flow is completed to obtain the new credentials.
+    """
+    home_dir = os.path.expanduser('~')
+    credential_dir = os.path.join(home_dir, '.credentials')
+    if not os.path.exists(credential_dir):
+        os.makedirs(credential_dir)
+    credential_path = os.path.join(credential_dir, 'client_id.json')
+
+    store = Storage(credential_path)
+    credentials = store.get()
+    if not credentials or credentials.invalid:
+        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, scope)
+        flow.user_agent = APPLICATION_NAME
+        if flags:
+            credentials = tools.run_flow(flow, store, flags)
+        else: # Needed only for compatibility with Python 2.6
+            credentials = tools.run(flow, store)
+        print('Storing credentials to ' + credential_path)
+    return credentials
+
+# ************************************************************************************************************************
+# MAIN
+# ************************************************************************************************************************
+"""Remove alias g.punch.vn for all user
+    Docs: https://developers.google.com/resources/api-libraries/documentation/admin/directory_v1/python/latest/index.html
+
+    Before run this program you must: 
+    - Create a project and credential for it. 
+    - Download json file of the credential, save it to local directory, name it as CLIENT_SECRET_FILE variable(above)
+    - Remember to delete this file after run.
+
+    In the first time program is run (with a project), you must grant permission for
+     the project on the Google permission request page."""
+
+credentials = get_credentials(SCOPES)
+http = credentials.authorize(httplib2.Http())
+service = discovery.build('admin', 'directory_v1', http=http)
+all_aliases = set()
+results = service.users().list(domain='punch.vn', orderBy='email', maxResults=200).execute()
+users = results.get('users', [])
+
+# Aliases of users
+for user in users:
+    results1 = service.users().aliases().list(userKey=user['id']).execute()
+    aliases = results1.get('aliases', [])
+    for alias in aliases:
+        print(alias)
+        regex = re.compile("@g.punch.vn")
+        check = regex.search(alias['alias'])
+        if check != None :
+            all_aliases.add(alias['alias'])
+
+# Aliases of groups
+results = service.groups().list(domain='punch.vn').execute()
+groups = results.get('groups', [])
+for group in groups:
+    results1 = service.groups().aliases().list(groupKey=group['id']).execute()
+    aliases = results1.get('aliases', [])
+    for alias in aliases:
+        all_aliases.add(alias['alias'])
+
+print("All aliases: ")
+for alias in all_aliases:
+    print(alias)

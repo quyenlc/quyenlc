@@ -1,0 +1,8 @@
+#!/bin/bash
+LOG_DIR="/data/mgsys/log/"
+NOT_AFTER=$(date "+%Y%m%d" --date="1 week ago")
+FILE_TYPE='f'
+for file_name in $(find $LOG_DIR -type $FILE_TYPE | grep "\.log\.$NOT_AFTER" );
+do
+	echo $file_name
+done

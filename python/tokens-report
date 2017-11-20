@@ -1,0 +1,123 @@
+#!/usr/bin/python
+import os
+import argparse
+import httplib2
+from apiclient.discovery import build
+from oauth2client import tools
+from Infra import Gauth, pmail, loadDict
+
+try:
+    import argparse
+    parser = argparse.ArgumentParser(prog='tokens-report', description='Make report on MDM enrolled devices with request list', parents=[tools.argparser])
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('--scan-admins', action='store_true', help='Enable scan administrators')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+    flags = parser.parse_args()
+except ImportError:
+    flags = None
+args = vars(flags)
+
+SCOPES = [
+    'https://www.googleapis.com/auth/admin.directory.user.security',
+    'https://www.googleapis.com/auth/admin.directory.user.readonly',
+    ]
+
+configurations  = loadDict('config/config.tokens-report.json')
+credential_file = os.path.join('.credentials', 'credential-tokens-report.json')
+
+mode = 'prod'
+if args['debug']:
+    mode = 'debug'
+
+credentials     = Gauth(SCOPES, flags, credential_file = credential_file)
+http = credentials.authorize(httplib2.Http())
+service = build('admin', 'directory_v1', http=http)
+
+WHITELIST_APP_IDS = [
+    '619872790197-0au3m58c2q0phgqbqqp4ka429ckusggt.apps.googleusercontent.com',# Slack
+    '19570130570-tfuuvh6hutjd09bq64is5sao643q67jg.apps.googleusercontent.com',# Slack
+    '596149463257-9oquqfivs9on8t8erq23c8qso6vk3cp1.apps.googleusercontent.com',# Atlassian
+    'Android device',
+    'Google Chrome',
+    'Backup and Sync from Google',
+    'Google Drive',
+    'Slack',
+    'iOS Account Manager',
+    '341981671303-g568phroodi4guli3inqb7gnsvbvqnlk.apps.googleusercontent.com' #Basecamp 3
+] 
+
+WHITELIST_SCOPES = [
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/plus.me'
+]
+abnormal_tokens = {}
+
+def isNormalToken(token):
+    if token['clientId'] in WHITELIST_APP_IDS :
+        return True
+    return False
+
+def scan_tokens(email):
+    success = False
+    while not success:
+        try:
+            result = service.tokens().list(userKey=email).execute()
+            success = True
+        except Exception:
+            pass
+    tokens = result['items']
+    for token in tokens:
+        if not isNormalToken(token):
+            if email in abnormal_tokens:
+                abnormal_tokens[email].append([token['displayText'], token['clientId'], token['scopes']])
+            else:
+                abnormal_tokens[email] = [[token['displayText'], token['clientId'], token['scopes']]]
+
+
+#Get all primary emails
+emails = []
+user_list = service.users().list(domain='punch.vn', projection='basic', orderBy='email', maxResults=200).execute()
+users = user_list['users']
+for user in users:
+    for email_info in user['emails']:
+        if 'primary' in email_info:
+            if not ( user['isDelegatedAdmin'] or user['isAdmin'] ) or args['scan_admins']:
+                emails.append(email_info['address'])
+
+#Foreach email, list its tokens
+"""MDM Docs: https://developers.google.com/resources/api-libraries/documentation/admin/directory_v1/python/latest/admin_directory_v1.tokens.html"""
+for email in emails:
+
+    scan_tokens(email)
+    if args['debug'] and len(abnormal_tokens.keys()) == 10:
+        break
+
+email_list = [{
+    "emails": [configurations[mode]['receiver']['email']],
+    "subject": "[infosec] List of abnormal tokens on G Suite",
+    "data" : { 
+        "receiver": configurations[mode]['receiver']['name'],
+        "msg": "Please doublecheck and remove these abnormal tokens on G Suite.",
+        "abnormal_tokens": abnormal_tokens
+    }
+}]
+
+template = 'tokens-report'
+pmail(email_list, template)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

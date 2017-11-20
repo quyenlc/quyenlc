@@ -1,0 +1,99 @@
+#!/bin/bash
+
+if [ -z "$SUDO_USER" ]; then
+  exec sudo -u root $0 "$@"
+fi
+
+usage() {
+  [ $# -ne 0 ] && echo "ERROR: $@"
+  echo "Usage: ${0##*/} 06"
+  exit 1
+}
+
+PATH=$PATH:/command:/usr/local/bin
+OP=
+
+re='^[0-9]{2,}$'
+if ! [[ $1 =~ $re ]] ; then
+  echo "Usage: ${0##*/} 06"
+  echo "(fcgi number must be a number, have at least 2 numbers: 03, 04, 13,25 ...)"
+  exit 1
+fi
+
+case $0 in
+  *-start-apart)
+    echo "starting..."
+    OP="-u"
+    ;;
+  *-stop-apart)
+    echo "stopping..."
+    OP="-d"
+    ;;
+  *-restart-apart)
+    echo "restarting..."
+    OP="-t"
+    ;;
+  *-reload-apart)
+    echo "reloading..."
+    OP="-h"
+    ;;
+  *-status-apart)
+    OP="status"
+    ;;
+  *)
+    usage "unknown OP"
+    ;;
+esac
+
+DAEMONS=$(echo /service/*$1.fcgi-ext)
+if [ "$DAEMONS" = "/service/*$1.fcgi-ext" ]; then
+  usage "no target daemon"
+fi
+
+if [ "$OP" != "status" ]; then
+  for d in $DAEMONS; do
+    echo "  $d"
+    svc $OP $d
+  done
+  echo
+  sleep 1
+  for d in $DAEMONS; do
+    svstat $d
+  done
+else
+  for d in $DAEMONS; do
+    svstat $d
+  done
+fi
+
+exit
+
+=encoding utf8
+
+=head1 NAME
+
+B<fcgi-start-part, fcgi-stop-part, fcgi-restart-part, fcgi-reload-part, fcgi-status> - Manage fcgi processes running under daemontools
+
+=head1 SYNOPSIS
+
+B<fcgi-start-part, fcgi-stop-part, fcgi-restart-part, fcgi-reload-part, fcgi-status>
+
+    $ fcgi-reload-part
+
+=head1 DESCRIPTION
+
+fcgi-XXX manages fcgi processes running under daemontools.
+
+fcgi-start-part is svc -u, 
+fcgi-stop-part is svc -d, 
+fcgi-restart-part is svc -t (SIGTERM), 
+fcgi-reload-part is svc -h (SIGHUP), 
+fcgi-status is svstat for /service/*fcgi services.
+
+fcgi-XXX internally performs exec sudo, so you need permission by sudoers.
+
+=head1 AUTHOR
+
+HIROSE Masaaki E<lt>masaaki.hirose@dena.comE<gt>
+
+=cut

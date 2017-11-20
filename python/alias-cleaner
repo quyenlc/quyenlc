@@ -1,0 +1,100 @@
+#!/usr/bin/python
+import os
+import sys
+import subprocess
+import logging
+import argparse
+import httplib2
+import re
+from apiclient.discovery import build
+from apiclient import discovery
+from oauth2client import client
+from oauth2client import tools
+from oauth2client.file import Storage
+
+try:
+    import argparse
+    flags = argparse.ArgumentParser(prog='alias-cleaner', description='Remove alias for all user', parents=[tools.argparser]).parse_args()
+except ImportError:
+    flags = None
+
+SCOPES = ['https://www.googleapis.com/auth/admin.directory.user', 'https://www.googleapis.com/auth/admin.directory.user.alias']
+CLIENT_SECRET_FILE = 'client_id.json'
+APPLICATION_NAME = 'Aliases Cleaner'
+
+def get_credentials(scope = SCOPES):
+    """Remove alias g.punch.vn for all user
+    Docs: https://developers.google.com/resources/api-libraries/documentation/admin/directory_v1/python/latest/index.html
+
+    Before run this program you must: 
+    - Create a project and credential for it. 
+    - Download json file of the credential, save it to local directory, name it as CLIENT_SECRET_FILE variable(above)
+    - Remember to delete this file after run.
+
+    In the first time program is run (with a project), you must grant permission for
+     the project on the Google permission request page.
+
+    If nothing has been stored, or if the stored credentials are invalid,
+    the OAuth2 flow is completed to obtain the new credentials.
+    """
+    home_dir = os.path.expanduser('~')
+    credential_dir = os.path.join(home_dir, '.credentials')
+    if not os.path.exists(credential_dir):
+        os.makedirs(credential_dir)
+    credential_path = os.path.join(credential_dir, 'client_id.json')
+
+    store = Storage(credential_path)
+    credentials = store.get()
+    if not credentials or credentials.invalid:
+        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, scope)
+        flow.user_agent = APPLICATION_NAME
+        if flags:
+            credentials = tools.run_flow(flow, store, flags)
+        else: # Needed only for compatibility with Python 2.6
+            credentials = tools.run(flow, store)
+        print('Storing credentials to ' + credential_path)
+    return credentials
+
+def clean(user_id, alias, service):
+    print("Cleaning alias " + alias + "...")
+    service.users().aliases().delete(userKey=user_id, alias=alias).execute()
+
+
+credentials = get_credentials(SCOPES)
+http = credentials.authorize(httplib2.Http())
+service = discovery.build('admin', 'directory_v1', http=http)
+
+
+results = service.users().list(domain='punch.vn', orderBy='email', maxResults=200).execute()
+users = results.get('users', [])
+user_objects = []
+if not users:
+    print('No users in the domain.')
+else:
+    for user in users:
+        user_object = {}
+        user_object['id'] = user["id"]
+        user_object['email'] = ''
+        for email in user["emails"]:
+            if "primary" in email.keys():
+                user_object['email'] = email['address']
+        user_objects.append(user_object)
+
+for user_object in user_objects:
+    print("Checking user " + user_object['email'])
+    results = service.users().aliases().list(userKey=user_object['id']).execute()
+    aliases = results.get('aliases', [])
+    if not aliases:
+        print('There is no alias need to remove for user ' + user_object['email'])
+    else:
+        for alias in aliases:
+            regex = re.compile("@g.punch.vn")
+            check = regex.search(alias['alias'])
+            if  check == None:
+                print("Alias " + alias['alias'] + " doesn't need to removed")
+            else:
+                print("Removing alias " + alias['alias'] + "...")
+                print("User: " + user_object['email'] + ",User id: " + user_object['id'] + ",Alias: " + alias['alias'])
+                clean(user_object['id'], alias['alias'], service)
+
+

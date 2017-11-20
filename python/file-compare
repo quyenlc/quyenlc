@@ -1,0 +1,35 @@
+#!/usr/local/bin/python3
+import argparse
+import sys
+import logging
+import os
+
+parser = argparse.ArgumentParser(prog='file-compare', description='Find lines in SRC but not in DEST')
+parser.add_argument('--src', nargs=1, help='Source file', required=True)
+parser.add_argument('--dest', nargs=1, help='Destination file', required=True)
+parser.add_argument('--sort', nargs=1, help='Sort ouput: asc/desc', choices=['asc', 'desc'])
+parser.add_argument('-l', '--log', nargs=1, help='Logfile location. Default: /tmp/' + parser.prog +'.log', default=["/tmp/" + parser.prog + ".log"])
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+args = vars(parser.parse_args(sys.argv[1:]))
+
+logging.basicConfig(level=logging.DEBUG, format = ' %(asctime)s [%(levelname)s] : %(message)s', filename=args['log'][0])
+logging.getLogger().addHandler(logging.StreamHandler())
+logging.debug(str(args))
+
+# Main
+src_file 	= open(args['src'][0], 'r')
+dest_file 	= open(args['dest'][0], 'r')
+source 	= src_file.readlines()
+if args['sort'] is not None:
+	if args['sort'] == 'asc':
+		source.sort()
+	else:
+		source.sort(reverse=True)
+
+dest 	= dest_file.readlines()
+count = 0
+for line in source:
+	if not line in dest:
+		count+=1
+		logging.info(str(count).rjust(2) + ": " + line.strip())
+        

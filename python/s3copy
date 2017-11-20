@@ -1,0 +1,67 @@
+#!/usr/local/bin/python3
+
+import argparse
+import sys
+import boto3
+import os 
+import logging
+import re
+
+parser = argparse.ArgumentParser(prog='s3copy', description='Copy data to s3')
+parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+parser.add_argument('--src', nargs=1, help='Local directory from which data is copied. Default: current dir', default=['.'])
+parser.add_argument('--dest', nargs=1, help='Local directory to which data is copied.', required=True)
+parser.add_argument('-l', '--log', nargs=1, help='logfile. Default: s3copy.log', default=['s3copy.log'])
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+args = vars(parser.parse_args(sys.argv[1:]))
+LOG_FILE = args['log'][0]
+logging.basicConfig(level=logging.DEBUG, format = ' %(asctime)s [%(levelname)s] : %(message)s', filename=LOG_FILE)
+logging.getLogger().addHandler(logging.StreamHandler())
+
+def validate(args):
+	# Custom validations
+	logging.debug("Input: " + str(args))
+	regex = re.compile(r's3://')
+	logging.debug("dest: " + args['dest'][0])
+	if regex.search(args['dest'][0]) == None:
+		return 'Wrong input !!!. dest must start with "s3://". Current: ' + args['dest'][0]
+	return 1
+
+args_validation = validate(args)
+
+if args_validation != 1:
+	logging.error(args_validation)
+	parser.print_help()
+	exit()
+
+DEBUG = True if args['debug'] else False
+SOURCE_DIR = args['src'][0]
+BUCKET_NAME = args['dest'][0].split("/")[2]
+DESTINATION_DIR = "/".join(args['dest'][0].split("/")[3:])
+
+logging.debug("SOURCE_DIR: " + SOURCE_DIR)
+logging.debug("DESTINATION_DIR: " + DESTINATION_DIR)
+
+s3 = boto3.resource('s3')
+
+# ****************************************************************************************
+
+def s3copy(src, dest):
+	for fod in os.listdir(src):
+		if not os.path.isdir(src + "/" + fod):
+			file_name = src + "/" + fod
+			key_name = dest + "/" + fod
+			logging.debug("Copy file " + file_name + " to s3 location s3://" + BUCKET_NAME + "/" + key_name )
+			s3.Object(BUCKET_NAME, key_name).put(Body=open(file_name, 'rb'))
+		else:
+			new_src = src + "/" + fod
+			new_dest = dest + "/" + fod
+			s3copy(new_src, new_dest)
+
+def test():
+	key_name = "test1/demo/hackerrank/split-and-join.py"
+	file_name = "/Users/quyen.le/git/private/python//demo/hackerrank/split-and-join.py"
+	s3.Object(BUCKET_NAME, key_name).put(Body=open(file_name, 'rb'))
+
+s3copy(SOURCE_DIR, DESTINATION_DIR)
+# test()

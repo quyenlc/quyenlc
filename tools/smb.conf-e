@@ -1,0 +1,222 @@
+
+# Samba config file created using SWAT
+# from UNKNOWN (172.21.144.74)
+# Date: 2015/08/31 15:14:55
+
+[global]
+	dos charset = CP932
+	display charset = UTF-8
+	workgroup = PUNCH
+	realm = PUNCH.LOCAL
+	netbios name = HAN-FS01
+	server string = Samba Server Version %v
+	security = ADS
+	log level = 5
+	max protocol = SMB2
+	load printers = No
+	disable spoolss = Yes
+	template homedir = /data/home/%U
+	template shell = /bin/bash
+	winbind use default domain = Yes
+	winbind nss info = rfc2307
+	winbind refresh tickets = Yes
+	winbind max domain connections = 5
+	idmap config * : range = 100000-149999
+	idmap config PUNCH : backend = ad
+	idmap config PUNCH : range = 10000-99999
+	idmap config PUNCH : schema_mode = rfc2307
+	idmap config * : backend = tdb
+	admin users = tung.vu, hung.tran, hieu.du, quyen.le
+	hosts allow = 172.16.0.0/12 172.23.0.0/16 192.168.100.0/22 210.86.225.160/28 101.53.19.16/28
+	cups options = raw
+	browseable = No
+	guest account = guest
+	map to guest = bad user
+
+	vfs objects = full_audit
+
+	full_audit:prefix = %u|%I|%m|%S
+#	full_audit:success = mkdir rename unlink rmdir pwrite
+#	full_audit:failure = none
+	full_audit:success = all
+	full_audit:failure = all
+	full_audit:facility = local6
+	full_audit:priority = NOTICE
+
+#[homes]
+#	comment = Home Directories
+#	read only = No
+#	browseable = No
+
+#[share]
+#	path = /data/share
+#	read only = Yes
+#	create mask = 0777
+#	directory mask = 0777
+#	write list = tung.vu, hung.tran, hieu.du, quyen.le
+#	browseable = Yes
+
+[printers]
+	comment = All Printers
+	path = /var/spool/samba
+	printable = Yes
+	print ok = Yes
+	browseable = No
+
+[infra_hanoi]
+	comment = InfraHanoi
+	path = /data/infra_hanoi
+	valid users = hung.tran, tung.vu, hieu.du, quyen.le
+	read only = No
+	create mask = 0777
+	directory mask = 0777
+
+[nvrbackup]
+	comment = Network Video Recorder Backups
+	path = /data/backup/nvrbackup
+	valid users = hung.tran, tung.vu, hieu.du, quyen.le, trang.bui, thuy.nguyen, giang.nguyen, hang.duong, linh.pham
+	read only = Yes
+	create mask = 0777
+	directory mask = 0777
+
+[backup]
+	comment = Network Video Recorder Backups
+	path = /data/backup
+	valid users = hung.tran, tung.vu, hieu.du, quyen.le
+	read only = No
+	browseable = No
+	create mask = 0777
+	directory mask = 0777
+
+[company_photos]
+	comment = Photos of Company
+	path = /data/photos
+	public = yes
+	guest ok = yes
+	writeable = no
+	write list = tung.vu, hung.tran, hieu.du, quyen.le, hoang.vu, lam.la
+	create mask = 0777
+	directory mask = 0777
+	browseable = yes
+
+[company_videos]
+	comment = Videos of Company
+	path = /data/videos
+	writeable = no
+	public = yes
+	guest ok = yes
+	write list = tung.vu, hung.tran, hieu.du, quyen.le, hoang.vu, lam.la
+	create mask = 0777
+	directory mask = 0777
+	browseable = yes
+[apps]
+	comment = Photos of Company
+	path = /data/apps
+	read only = Yes
+	create mask = 0777
+	directory mask = 0777
+	write list = tung.vu, hung.tran, hieu.du, quyen.le
+	browseable = Yes
+
+[bitlocker_recovery]
+	comment = Bitlocker Recovery Key of Company
+	path = /data/bitlocker_recovery
+	read only = Yes
+	create mask = 0777
+	directory mask = 0777
+	write list = tung.vu, hung.tran, hieu.du, quyen.le
+	browseable = Yes
+
+[26_dots_tk]
+	comment = TK Project
+	path = /data/projects/26_dots_tk
+	read only = No
+	valid users = tung.vu, hung.tran, hieu.du, quyen.le, sekino.seiichi, sho.nishikawa, hieu.nguyen, chris.kang, ha.nguyen, loan.nguyen, tuan.tran, le.nguyen, thuy.le, lam.la, tomohiro.takiguchi, tuan.bui, cuong.tran, nam.nguyen, luc.nguyen, duc.nguyen, minh.nguyen, toan.le, hieu.phan, osamu.shishime, viet.d.vu, hanh.nguyen, loan.nguyen.a, nga.trinh, van.ha, tuan.vu, trang.nguyen.a, trang.vu, nga.nguyen, chau.nguyen, yoshitsugu.sato, arihisa.ide, tai.huynh, thiep.trinh, oanh.luu, hoa.tong, yen.nguyen, may.nguyen, nam.vu, thanh.khuong, huong.nguyen.a, trang.nguyen, trang.tran, dung.le, huong.nguyen, motoyuki.shibui, khanh.bui, nhat.nhan, toan.phan, truong.pham, quan.ta, thanh.vu, yen.luu, khuyen.pham, hong.nguyen, hong.phan, hoang.tran, sam.pham, thuy.nguyen.a, nguyen.tu, son.khuat, linh.le
+	read list = dung.le, huong.nguyen
+	create mask = 0777
+	directory mask = 0777
+	browseable = Yes
+
+[90_unity_projects]
+	comment = Unity Project
+	path = /data/projects/90_unity_projects
+	read only = No
+	valid users = hung.tran, tung.vu, hieu.du, quyen.le, minh.ha, to.luu, chu.nguyen, hoang.vu, linh.le, anh.pham, ha.nguyen, osamu.shishime, trang.nguyen, sam.pham, ha.pham, lam.la, thuy.nguyen.a, tue.tong, son.khuat, nam.vu, nguyen.tu, trang.tran, binh.vu, luyen.bui, loan.nguyen, loan.nguyen.a, nhat.nhan, nhung.do, thiep.trinh, hoa.tong, anh.h.nguyen, truong.pham, van.ha, hanh.nguyen, quan.ta, viet.d.vu, may.nguyen
+	create mask = 0777
+	directory mask = 0777
+	browseable = Yes
+
+[93_art_prep]
+	comment = Unity Project
+	path = /data/projects/93_art_prep
+	read only = No
+	valid users = hung.tran, tung.vu, hieu.du, quyen.le, osamu.shishime, trang.nguyen, trang.vu, hanh.nguyen, trang.nguyen.a, tomohiro.takiguchi, may.nguyen, ngu.nguyen, dat.nguyen
+	create mask = 0777
+	directory mask = 0777
+	browseable = Yes
+
+[91_tkvn]
+	comment = TKVN Project
+	path = /data/projects/91_tkvn
+	read only = No
+	valid users = hung.tran, tung.vu, hieu.du, quyen.le, tai.huynh, thiep.trinh, oanh.luu, hoa.tong, yen.nguyen, may.nguyen, nam.vu, thanh.khuong, tuan.bui, khanh.bui, nhat.nhan, toan.phan, truong.pham, quan.ta, thanh.vu, lam.la, yen.luu, khuyen.pham, hong.nguyen, hong.phan, hoang.tran, huong.nguyen.a, osamu.shishime 
+	create mask = 0777
+	directory mask = 0777
+	browseable = Yes
+
+[92_ImageRecognition_Innovatube]
+        comment = ImageRecognition Innovatube
+        path = /data/projects/92_ImageRecognition_Innovatube
+        read only = No
+        valid users = hung.tran, tung.vu, hieu.du, quyen.le, viet.vu, duong.nguyen, tri.duong, giang.pham, hoi.nguyen, nhung.nguyen, chi.ngo, khanh.dang
+        read list = tri.duong, hoi.nguyen, nhung.nguyen
+        create mask = 0777
+        directory mask = 0777
+        browseable = Yes
+
+
+###########################################################
+# Attention! Please keep above setting.
+###########################################################
+
+[hung.tran]
+        comment = hung.tran
+        path = /data/home/hung.tran
+        valid users = hung.tran
+        read only = No
+        create mask = 0777
+        directory mask = 0777
+        browseable = No
+[hieu.du]
+        comment = hieu.du
+        path = /data/home/hieu.du
+        valid users = hieu.du
+        read only = No
+        create mask = 0777
+        directory mask = 0777
+        browseable = No
+[tung.vu]
+        comment = tung.vu
+        path = /data/home/tung.vu
+        valid users = tung.vu
+        read only = No
+        create mask = 0777
+        directory mask = 0777
+        browseable = No
+[quyen.le]
+        comment = quyen.le
+        path = /data/home/quyen.le
+        valid users = quyen.le
+        read only = No
+        create mask = 0777
+        directory mask = 0777
+        browseable = No
+
+[linh.pham]
+        comment = linh.pham
+        path = /data/home/linh.pham
+        valid users = linh.pham
+        read only = No
+        create mask = 0777
+        directory mask = 0777
+        browseable = No

@@ -1,0 +1,6 @@
+NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+xvda    202:0    0  100G  0 disk 
+|-xvda1 202:1    0   10G  0 part /
+`-xvda2 202:2    0   90G  0 part 
+xvdc    202:32   0  300G  0 disk /data02
+xvdb    202:16   0  300G  0 disk /data

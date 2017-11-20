@@ -1,0 +1,71 @@
+{% extends 'layouts/main.html' %}
+{% load static %}
+{% load bootstrap3 %}
+{% block title %}
+    List Idols
+{% endblock %}
+{% block page_header %}
+    <h1>
+            Danh sách thần tượng
+            <small>Optional description</small>
+          </h1>
+          <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
+            <li class="active">Here</li>
+          </ol>
+{% endblock%}
+{% block content %}
+    <div class="row">
+        <div class="box box-default">
+            <form role="form">
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="name">{{ form.name.label }}</label>
+                          {{ form.name }}
+                          {{ form.name.errors }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="year_of_birth">{{ form.year_of_birth.label }}</label>
+                        {{ form.year_of_birth }}
+                        {{ form.year_of_birth.errors }}
+                    </div>
+                </div>
+            </div>
+            <div class="box-footer">
+                <button type="submit" class="btn btn-primary">
+                    {% bootstrap_icon "glyphicon glyphicon-search" %} Tìm kiếm
+                </button>
+            </div>
+            </form>
+        </div> 
+    </div>
+    {% if idols %}
+    <div class="col-xs-12">
+        <div class="box">
+            <div class="box-body table-responsive no-padding">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Họ tên</th>
+                            <th>Ngày sinh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idol in idols%}
+                            <tr>
+                                <td>{{ idol.name }}</td>
+                                <td>{{ idol.birthday }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+        <p>Không có idol nào trong thoả mãn</p>
+    {% endif %}
+{% endblock %}
