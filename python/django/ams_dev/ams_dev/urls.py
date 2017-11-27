@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from ams.admin import backend
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-
+    url(r'^backend/', backend.urls),
+    # url(r'^admin/', admin.site.urls),
     url(r'^ams/', include('ams.urls')),
     url('', include('social_django.urls', namespace='social')),
 ]

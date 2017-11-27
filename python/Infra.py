@@ -4,10 +4,15 @@ import smtplib
 import requests, bs4
 
 from smtplib import SMTPException
+from EmailNotification import EmailNotification
+
+from google.oauth2 import service_account
+from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import AuthorizedSession
+
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
-from EmailNotification import EmailNotification
 
 # __all__ = ['tail']
 
@@ -102,6 +107,16 @@ def pmail(email_list, template):
     """Prety mail"""
     e = EmailNotification("SENDMAIL", "Infra Hanoi", "infra@punch.vn", "infra@punch.vn")
     e.mailbulk(email_list, template)
+
+def Gauth2(service_account_file, scopes, subject = 'pvn_kpi_sys@punch.vn'):
+    """http://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html"""
+    credentials = service_account.Credentials.from_service_account_file(service_account_file, scopes = scopes, subject = subject)
+    authed_session = AuthorizedSession(credentials)
+    return authed_session
+
+
+
+
 
 
 # End 
