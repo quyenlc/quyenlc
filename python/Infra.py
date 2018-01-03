@@ -1,7 +1,8 @@
 import os
 import subprocess
 import smtplib
-import requests, bs4
+import requests
+import bs4
 
 from smtplib import SMTPException
 from EmailNotification import EmailNotification
@@ -16,6 +17,7 @@ from oauth2client.file import Storage
 
 # __all__ = ['tail']
 
+
 def tail(f, n=10):
     if os.path.isfile(f):
         p = subprocess.Popen(['tail', '-n', str(n), f], stdout=subprocess.PIPE)
@@ -27,37 +29,44 @@ def tail(f, n=10):
         logging.error("Could not read file " + f)
         return 0
 
+
 def loadDict(f):
     s = open(f, 'r').read()
     adict = eval(s)
     return adict
 
+
 def saveDict(f, adict):
     target = open(f, 'w')
     target.write(str(adict))
 
-def notify(sender, receiver, message = "Please ignore this email", subject = "Testing, please ignore", mail_server = 'mail.denagames-asia.local'):
-    header = "From: "+ sender +"""
+
+def notify(sender, receiver, message="Please ignore this email",
+           subject="Testing, please ignore",
+           mail_server='mail.denagames-asia.local'):
+    header = "From: " + sender + """
 To: """ + receiver + """
 MIME-Version: 1.0
 Content-type: text/html
 Subject: """ + subject + """
 
-""";
+"""
     full_message = header + message
     try:
         smtpObj = smtplib.SMTP(mail_server)
-        smtpObj.sendmail(sender, receivers, full_message)         
+        smtpObj.sendmail(sender, receivers, full_message)
         logging.info("Successfully sent email")
     except SMTPException:
         logging.error("Unable to send email")
+
 
 def tar(dir_name):
     try:
         subprocess.check_call(['tar', '-zcf', dir_name + ".tar.gz", dir_name])
         subprocess.check_call(['rm', '-rf', dir_name])
     except subprocess.CalledProcessError:
-        logging.error("Could not compress directory: "+ dir_name)
+        logging.error("Could not compress directory: " + dir_name)
+
 
 def myIp():
     response = requests.get('http://ipinfo.io/ip')
@@ -65,15 +74,18 @@ def myIp():
     return ip
 
 
-def Gauth(scope, flags, client_secret_file = 'client_id.json', credential_file = 'credential.json', app_name='quyen.le@punch.vn'):
+def Gauth(scope, flags, client_secret_file='client_id.json',
+          credential_file='credential.json', app_name='quyen.le@punch.vn'):
 
     """Authenticate with Google
-    Before run this program you must: 
-    - Create a project and its secret file (to generate credential file). 
-    - Download json format of the secret file, save it to local directory, name it as client_secret_file variable(above)
+    Before run this program you must:
+    - Create a project and its secret file (to generate credential file).
+    - Download json format of the secret file, save it to local directory, name
+        it as client_secret_file variable(above)
     - Remember to delete this file after run.
 
-    In the first time program is run (with a project), you must grant permission for
+    In the first time program is run (with a project), you must grant
+        permission for
      the project on the Google permission request page.
 
     If nothing has been stored, or if the stored credentials are invalid,
@@ -83,15 +95,14 @@ def Gauth(scope, flags, client_secret_file = 'client_id.json', credential_file =
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir, credential_file )
+    credential_path = os.path.join(credential_dir, credential_file)
     if credential_file != 'credential.json':
-        credential_path = credential_file;
-
+        credential_path = credential_file
 
     store = Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
-        client_secret_path = os.path.join(credential_dir, client_secret_file);
+        client_secret_path = os.path.join(credential_dir, client_secret_file)
         if client_secret_file != 'client_id.json':
             client_secret_path = client_secret_file
         flow = client.flow_from_clientsecrets(client_secret_path, scope)
@@ -99,18 +110,22 @@ def Gauth(scope, flags, client_secret_file = 'client_id.json', credential_file =
         # print('Storing credentials to ' + credential_path)
         if flags:
             credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
+        else:  # Needed only for compatibility with Python 2.6
             credentials = tools.run(flow, store)
     return credentials
 
+
 def pmail(email_list, template):
     """Prety mail"""
-    e = EmailNotification("SENDMAIL", "Infra Hanoi", "infra@punch.vn", "infra@punch.vn")
+    e = EmailNotification("SENDMAIL", "Infra Hanoi", "infra@punch.vn",
+                          "infra@punch.vn")
     e.mailbulk(email_list, template)
 
-def Gauth2(service_account_file, scopes, subject = 'pvn_kpi_sys@punch.vn'):
+
+def Gauth2(service_account_file, scopes, subject='pvn_kpi_sys@punch.vn'):
     """http://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html"""
-    credentials = service_account.Credentials.from_service_account_file(service_account_file, scopes = scopes, subject = subject)
+    credentials = service_account.Credentials.from_service_account_file(
+            service_account_file, scopes=scopes, subject=subject)
     authed_session = AuthorizedSession(credentials)
     return authed_session
 
