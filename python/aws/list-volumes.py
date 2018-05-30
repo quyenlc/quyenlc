@@ -4,8 +4,8 @@ import boto3
 from pprint import pprint
 client = boto3.client(
     'ec2',
-    aws_access_key_id='AKIAJM4KYHN5INWP34UA',
-    aws_secret_access_key='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',
+    aws_access_key_id='',
+    aws_secret_access_key='',
     region_name='us-west-1'
 )
 avolumes = client.describe_volumes()
