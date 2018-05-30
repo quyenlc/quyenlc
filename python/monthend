@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from selenium import webdriver
-from datetime import date
+from datetime import date, datetime
 import os
 import sys
 import argparse
@@ -65,24 +65,33 @@ fill_name('login', USERNAME)
 fill_name('passwd', PASSWD)
 click_name('submitit')
 
-#Check in
-browser.get(EGROUPWARE_URL + 'index.php?menuaction=timesheet.timesheet_ui.edit')
+# Get last checkin
+browser.get(EGROUPWARE_URL + 'index.php?menuaction=timesheet.timesheet_ui.index')
+select_id('exec[nm][rows][ts_owner]', '229') # Le, Quyen
+elem = browser.find_element_by_id('1[ts_start]')
+last_checkin = datetime.strptime(elem.text.split()[0], '%Y/%m/%d')
+if last_checkin < datetime.today():
+    #Check in
+    browser.get(EGROUPWARE_URL + 'index.php?menuaction=timesheet.timesheet_ui.edit')
 
-select_id('exec[pm_id]', '134') # Infrastructure management
-today = str(date.today().year) + "/" + str(date.today().month) + "/" + str(date.today().day) 
-fill_id('exec[ts_start][str]', today)
-select_id('exec[start_time][H]', '8')
-select_id('exec[start_time][i]', '30')
-fill_id('exec[ts_duration][value]', '8')
-fill_id('exec[ts_quantity]', '1')
-select_id('exec[end_time][H]', '0')
-select_id('exec[end_time][i]', '0')
 
-if args['dry_run']:
-    print("Dry run mode is enabled. Stop")
+    select_id('exec[pm_id]', '134') # Infrastructure management
+    today = str(date.today().year) + "/" + str(date.today().month) + "/" + str(date.today().day) 
+    fill_id('exec[ts_start][str]', today)
+    select_id('exec[start_time][H]', '8')
+    select_id('exec[start_time][i]', '30')
+    fill_id('exec[ts_duration][value]', '8')
+    fill_id('exec[ts_quantity]', '1')
+    select_id('exec[end_time][H]', '0')
+    select_id('exec[end_time][i]', '0')
+
+    if args['dry_run']:
+        print("Dry run mode is enabled. Stop")
+    else:
+        click_name('exec[button][save]')
 else:
-    click_name('exec[button][save]')
-    browser.close()
+    print("Checked in. Terminate!")
+browser.close()
 
 
 
