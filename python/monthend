@@ -33,7 +33,7 @@ EGROUPWARE_URL = 'http://172.21.149.150/egroupware/'
 if args['url'] != None:
     EGROUPWARE_URL = args['url'][0]
 
-browser = webdriver.Firefox()
+browser = webdriver.Chrome('chromedriver')
 browser.get(EGROUPWARE_URL)
 
 def click_id(button_id):
